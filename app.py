@@ -5,7 +5,7 @@ import time
 from model import predict_url
 
 # 🔑 Paste your API key here
-API_KEY = "019dcda5-d2a7-716f-a41f-6f97686f468d"
+API_KEY = "PASTE_YOUR_API_KEY_HERE"
 
 
 # 🔍 URLScan function
@@ -13,12 +13,12 @@ def scan_url(url):
     headers = {
         "Content-Type": "application/json",
         "API-Key": API_KEY,
-        "User-Agent": "Phishing-Detector-App"   # ✅ FIX ADDED
+        "User-Agent": "Phishing-Detector-App"
     }
 
     data = {
         "url": url,
-        "visibility": "unlisted"   # ✅ FIX ADDED
+        "visibility": "unlisted"
     }
 
     response = requests.post(
@@ -27,7 +27,7 @@ def scan_url(url):
         json=data
     )
 
-    # ✅ DEBUG (shows real error)
+    # ❌ Error handling
     if response.status_code != 200:
         return f"❌ Error {response.status_code}: {response.text}"
 
@@ -63,7 +63,7 @@ if st.button("Check URL"):
     if url.strip() == "":
         st.warning("⚠️ Please enter a URL")
     else:
-        # ✅ AUTO FIX URL
+        # ✅ Auto-fix URL
         if not url.startswith("http"):
             url = "https://" + url
 
@@ -79,28 +79,42 @@ if st.button("Check URL"):
         except:
             ml_result = "ML model error"
 
-        st.write("🤖 ML Prediction:", ml_result)
+        # 🤖 ML Output
+        if "phishing" in str(ml_result).lower():
+            st.error("🤖 ML Model: PHISHING ⚠️")
+        else:
+            st.success("🤖 ML Model: SAFE ✅")
 
-        # 🌐 API Result
+        # 🌐 API Result Handling
         if isinstance(scan_result, dict):
             try:
-                verdict = scan_result["verdicts"]["overall"]["malicious"]
+                verdict = scan_result.get("verdicts", {}).get("overall", {}).get("malicious", False)
 
                 if verdict:
                     st.error("🚨 URLScan Result: MALICIOUS")
                 else:
                     st.success("✅ URLScan Result: SAFE")
 
-                # 📊 Extra info
-                st.write("🌍 Domain:", scan_result["page"]["domain"])
-                st.write("🖥️ IP Address:", scan_result["page"]["ip"])
+                # 📊 Safe extraction
+                domain = scan_result.get("page", {}).get("domain", "Not Available")
+                ip = scan_result.get("page", {}).get("ip", "Not Available")
+
+                st.write("🌍 Domain:", domain)
+                st.write("🖥️ IP Address:", ip)
 
                 # 🔗 Report
-                st.write("📄 Detailed Report:")
-                st.write(scan_result["task"]["reportURL"])
+                report_url = scan_result.get("task", {}).get("reportURL", "")
+                if report_url:
+                    st.write("📄 Detailed Report:")
+                    st.write(report_url)
 
             except:
                 st.warning("⚠️ Could not extract full details")
                 st.write(scan_result)
+
         else:
-            st.error(scan_result)
+            # 🔥 Handle spam / API block nicely
+            if "spam" in str(scan_result).lower():
+                st.warning("⚠️ This URL cannot be scanned (blocked by API). Try another URL.")
+            else:
+                st.error(scan_result)

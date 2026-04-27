@@ -5,7 +5,7 @@ import time
 from model import predict_url
 
 # 🔑 Paste your API key here
-API_KEY = "PASTE_YOUR_API_KEY_HERE"
+API_KEY = " 019dcda5-d2a7-716f-a41f-6f97686f468d"
 
 
 # 🔍 URLScan function

@@ -6,7 +6,7 @@ from model import predict_url
 # -----------------------------
 # 🔐 LOAD API KEY SAFELY
 # -----------------------------
-API_KEY = st.secrets.get("API_KEY", None)
+API_KEY = st.secrets.get("019dce1f-4190-715a-af73-18088e8d0885", None)
 
 if not API_KEY:
     st.error("❌ API key missing. Add it in Streamlit Secrets as API_KEY.")

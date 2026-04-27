@@ -4,7 +4,7 @@ import time
 from model import predict_url
 
 # 🔐 Get API key from Streamlit Secrets
-API_KEY = st.secrets.get("API_KEY", "").strip()
+API_KEY = st.secrets.get("019dcda5-d2a7-716f-a41f-6f97686f468d", "").strip()
 
 
 # 🔍 URLScan function

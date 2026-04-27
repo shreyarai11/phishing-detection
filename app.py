@@ -1,15 +1,18 @@
-
 import streamlit as st
 import requests
 import time
 from model import predict_url
 
-# 🔑 Paste your API key here
-API_KEY = " 019dcda5-d2a7-716f-a41f-6f97686f468d"
+# 🔐 Get API key from Streamlit Secrets
+API_KEY = st.secrets.get("API_KEY", "").strip()
 
 
 # 🔍 URLScan function
 def scan_url(url):
+    # ❗ Check API key
+    if not API_KEY:
+        return "❌ API key missing. Add it in Streamlit Secrets."
+
     headers = {
         "Content-Type": "application/json",
         "API-Key": API_KEY,
@@ -21,25 +24,35 @@ def scan_url(url):
         "visibility": "unlisted"
     }
 
-    response = requests.post(
-        "https://urlscan.io/api/v1/scan/",
-        headers=headers,
-        json=data
-    )
+    try:
+        response = requests.post(
+            "https://urlscan.io/api/v1/scan/",
+            headers=headers,
+            json=data
+        )
+    except Exception as e:
+        return f"❌ Request Error: {e}"
 
     # ❌ Error handling
     if response.status_code != 200:
         return f"❌ Error {response.status_code}: {response.text}"
 
     result = response.json()
-    uuid = result["uuid"]
+    uuid = result.get("uuid", "")
+
+    if not uuid:
+        return "❌ Failed to get scan ID"
 
     time.sleep(10)
 
     result_api = f"https://urlscan.io/api/v1/result/{uuid}/"
 
+    # 🔁 Polling
     for _ in range(10):
-        res = requests.get(result_api)
+        try:
+            res = requests.get(result_api)
+        except Exception as e:
+            return f"❌ Result Fetch Error: {e}"
 
         if res.status_code == 200:
             return res.json()
@@ -70,22 +83,21 @@ if st.button("Check URL"):
         st.write("🔗 Checking:", url)
         st.info("⏳ Scanning URL... please wait")
 
-        # 🔍 API Scan
-        scan_result = scan_url(url)
-
         # 🤖 ML Prediction
         try:
             ml_result = predict_url(url)
-        except:
-            ml_result = "ML model error"
+        except Exception as e:
+            ml_result = f"ML Error: {e}"
 
-        # 🤖 ML Output
         if "phishing" in str(ml_result).lower():
             st.error("🤖 ML Model: PHISHING ⚠️")
         else:
             st.success("🤖 ML Model: SAFE ✅")
 
-        # 🌐 API Result Handling
+        # 🔍 API Scan
+        scan_result = scan_url(url)
+
+        # 🌐 Handle API result
         if isinstance(scan_result, dict):
             try:
                 verdict = scan_result.get("verdicts", {}).get("overall", {}).get("malicious", False)
@@ -108,12 +120,12 @@ if st.button("Check URL"):
                     st.write("📄 Detailed Report:")
                     st.write(report_url)
 
-            except:
+            except Exception as e:
                 st.warning("⚠️ Could not extract full details")
                 st.write(scan_result)
 
         else:
-            # 🔥 Handle spam / API block nicely
+            # 🔥 Handle spam / API block
             if "spam" in str(scan_result).lower():
                 st.warning("⚠️ This URL cannot be scanned (blocked by API). Try another URL.")
             else:
